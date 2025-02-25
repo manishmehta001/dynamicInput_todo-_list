@@ -1,156 +1,108 @@
 import { useState } from "react";
+import EmployeeForm from "./components/EmployeeForm";
+import Header from "./components/Header";
+import ExtraFields from "./components/ExtraFields";
+import EmployeeList from "./components/EmployeeList";
+import ProjectSummary from "./components/ProjectSummary";
 
 export default function App() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [id, setId] = useState("");
-  const [salary, setSalary] = useState("");
-  const [extraFields, setExtraFields] = useState([]);
-  const [extraInputs, setExtraInputs] = useState({});
-  const [items, setItems] = useState([]);
+  const [showSummary, setShowSummary] = useState(false);
 
-  console.log("extraFields", extraFields);
-  console.log("extraInput", extraInputs);
-
-  const addExtraField = () => {
-    if (extraFields.length < 5) {
-      const newField = `extra fields${extraFields.length + 1}`;
-      setExtraFields([...extraFields, newField]);
-      setExtraInputs({ ...extraInputs, [newField]: "" });
-    }
+  const toggleSummary = () => {
+    setShowSummary(!showSummary);
   };
 
-  const removeExtraField = (field) => {
-    console.log("field==>", field);
-    const remainingFields = extraFields.filter((f) => f !== field);
-    setExtraFields(remainingFields);
-    const updatedInputs = { ...extraInputs };
-    console.log("updatedInputs", updatedInputs);
-    delete updatedInputs[field];
-    setExtraInputs(updatedInputs);
+  const [employee, setEmployee] = useState({
+    name: "",
+    email: "",
+    id: "",
+    age: "",
+  });
+  const [employeeList, setEmployeeList] = useState([]);
+  const [extraInputs, setExtraInputs] = useState({});
+  const [extraFields, setExtraFields] = useState([]);
+  const [error, setError] = useState({});
+
+  const validateForm = () => {
+    const newError = {};
+    const { name, email, id, age } = employee;
+
+    const nameRegex = /^[A-Za-z\s]+$/;
+    if (!name.trim()) newError.name = "Name is required!";
+    if (!nameRegex.test(name))
+      newError.name = "Name should contain only letters";
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim()) newError.email = "Email is required!";
+    if (!emailRegex.test(email)) newError.email = "Invalid email format";
+
+    const number = /^\d+$/;
+    if (!id.trim()) newError.id = "ID is required";
+    if (!number.test(id)) newError.id = "ID must be a number";
+    if (employeeList.some((emp) => Number(emp.id) === Number(id)))
+      newError.id = "ID must be unique";
+
+    if (!age.trim()) newError.age = "age is required";
+    if (!number.test(id)) newError.age = "age must be a number";
+
+    return newError;
   };
 
   const handleSubmit = () => {
+    const newError = validateForm();
+    if (Object.keys(newError).length > 0) {
+      setError(newError);
+      return;
+    }
+
     const newItem = {
-      name,
-      email,
-      id,
-      salary,
+      ...employee,
       extra: { ...extraInputs },
     };
-    setItems([...items, newItem]);
 
-    setName("");
-    setEmail("");
-    setId("");
-    setSalary("");
+    setEmployeeList([...employeeList, newItem]);
+    setEmployee({ name: "", id: "", email: "", age: "" });
+    setError({});
     setExtraInputs(
       extraFields.reduce((acc, field) => ({ ...acc, [field]: "" }), {})
     );
   };
 
+  console.log("employee", employee);
+
   return (
     <div style={{ maxWidth: "600px", margin: "auto", textAlign: "center" }}>
-      <h2>Employee Form</h2>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="ID"
-          value={id}
-          onChange={(e) => setId(e.target.value)}
-        />
-        <input
-          type="number"
-          placeholder="Salary"
-          value={salary}
-          onChange={(e) => setSalary(e.target.value)}
-        />
-      </div>
-
-      {/* dynamic fields */}
-      <div style={{ marginTop: "15px" }}>
-        {extraFields.map((field, index) => (
-          <div
-            key={index}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              marginBottom: "5px",
-            }}
-          >
-            <input
-              type="text"
-              placeholder={`Enter ${field}`}
-              value={extraInputs[field]}
-              onChange={(e) =>
-                setExtraInputs({ ...extraInputs, [field]: e.target.value })
-              }
-              style={{ flex: 1, marginRight: "10px" }}
-            />
-            <button
-              onClick={() => removeExtraField(field)}
-              style={{ color: "red" }}
-            >
-              ➖
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {extraFields.length < 5 && (
+      <Header />
+      <EmployeeForm
+        employee={employee}
+        setEmployee={setEmployee}
+        error={error}
+      />
+      <ExtraFields
+        extraFields={extraFields}
+        setExtraFields={setExtraFields}
+        extraInputs={extraInputs}
+        setExtraInputs={setExtraInputs}
+      />
+      <br />
+      <button style={{ cursor: "pointer" }} onClick={handleSubmit}>
+        Submit
+      </button>
+      <EmployeeList
+        employeeList={employeeList}
+        extraFields={extraFields}
+        setEmployeeList={setEmployeeList}
+      />
+      {employeeList.length === 0 && (
         <button
-          onClick={addExtraField}
-          style={{ marginTop: "10px", marginBottom: "10px" }}
+          onClick={toggleSummary}
+          style={{ cursor: "pointer", marginTop: "8px", marginBottom: "8px" }}
         >
-          ➕ Add Extra Field
+          {showSummary ? "Hide Summary" : "Show Summary"}
         </button>
       )}
 
-      <br />
-      <button onClick={handleSubmit}>Submit</button>
-
-      <table
-        border="1"
-        style={{ marginTop: "20px", width: "100%", textAlign: "center" }}
-      >
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>ID</th>
-            <th>Salary</th>
-            {extraFields.map((field, index) => (
-              <th key={index}>{field}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item, index) => (
-            <tr key={index}>
-              <td>{item.name}</td>
-              <td>{item.email}</td>
-              <td>{item.id}</td>
-              <td>{item.salary}</td>
-              {extraFields.map((field, index) => (
-                <td key={index}>{item.extra[field] || "N/A"}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {showSummary && <ProjectSummary />}
     </div>
   );
 }
